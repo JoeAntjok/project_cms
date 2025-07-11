@@ -1,21 +1,112 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Calendar, User, Clock, Search } from 'lucide-react';
-import { blogPosts, categories } from '../data/blogPosts';
+
+interface WordPressPost {
+  id: number;
+  title: {
+    rendered: string;
+  };
+  excerpt: {
+    rendered: string;
+  };
+  date: string;
+  link: string;
+  _embedded: {
+    author: Array<{
+      name: string;
+    }>;
+    'wp:featuredmedia'?: Array<{
+      source_url: string;
+    }>;
+  };
+}
 
 const Blog = () => {
+  const [posts, setPosts] = useState<WordPressPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
 
-  const filteredPosts = blogPosts.filter(post => {
-    const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         post.excerpt.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || post.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('https://nuhafadh.com/wp-json/wp/v2/posts?_embed');
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch posts');
+        }
+        
+        const data = await response.json();
+        setPosts(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPosts();
+  }, []);
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  const stripHtml = (html: string) => {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || '';
+  };
+
+  const filteredPosts = posts.filter(post => {
+    const matchesSearch = post.title.rendered.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         stripHtml(post.excerpt.rendered).toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesSearch;
   });
 
-  const featuredPosts = filteredPosts.filter(post => post.featured);
-  const regularPosts = filteredPosts.filter(post => !post.featured);
+  const featuredPosts = filteredPosts.slice(0, 3);
+  const regularPosts = filteredPosts.slice(3);
+
+  const categories = [
+    { id: 'all', name: 'All Articles' }
+  ];
+
+  if (loading) {
+    return (
+      <div className="pt-16 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-electric-violet-600 mx-auto mb-4"></div>
+          <p className="text-black-600">Loading articles...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="pt-16 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-black-900 mb-4">Error Loading Articles</h2>
+          <p className="text-black-600 mb-8">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="relative overflow-hidden bg-gradient-to-r from-electric-violet-600 to-electric-violet-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 hover:shadow-lg hover:scale-105 group"
+          >
+            <span className="relative z-10">Try Again</span>
+            <div className="absolute inset-0 bg-gradient-to-r from-electric-violet-700 to-electric-violet-800 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="pt-16">
@@ -78,9 +169,13 @@ const Blog = () => {
                 >
                   <div className="relative overflow-hidden">
                     <img
-                      src={post.image}
-                      alt={post.title}
+                      src={post._embedded['wp:featuredmedia']?.[0]?.source_url || 'https://images.pexels.com/photos/267350/pexels-photo-267350.jpeg?auto=compress&cs=tinysrgb&w=800'}
+                      alt={post.title.rendered}
                       className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = 'https://images.pexels.com/photos/267350/pexels-photo-267350.jpeg?auto=compress&cs=tinysrgb&w=800';
+                      }}
                     />
                     <div className="absolute top-4 left-4">
                       <span className="bg-gradient-to-r from-electric-violet-600 to-electric-violet-700 text-white px-3 py-1 rounded-full text-sm font-medium">
@@ -91,29 +186,33 @@ const Blog = () => {
                   <div className="p-6">
                     <div className="flex items-center text-sm text-black-500 mb-3">
                       <Calendar size={16} className="mr-2" />
-                      <span>{new Date(post.date).toLocaleDateString()}</span>
+                      <span>{formatDate(post.date)}</span>
                       <span className="mx-2">•</span>
                       <Clock size={16} className="mr-2" />
-                      <span>{post.readTime}</span>
+                      <span>5 min read</span>
                     </div>
                     <h3 className="text-xl font-semibold text-black-900 mb-3 line-clamp-2">
-                      {post.title}
+                      {post.title.rendered}
                     </h3>
                     <p className="text-black-600 mb-4 line-clamp-3">
-                      {post.excerpt}
+                      {stripHtml(post.excerpt.rendered)}
                     </p>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
                         <User size={16} className="mr-2 text-black-400" />
-                        <span className="text-sm text-black-600">{post.author}</span>
+                        <span className="text-sm text-black-600">
+                          {post._embedded.author[0]?.name || 'Admin'}
+                        </span>
                       </div>
-                      <Link
-                        to={`/blog/${post.id}`}
+                      <a
+                        href={post.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="bg-gradient-to-r from-electric-violet-600 to-electric-violet-700 bg-clip-text text-transparent hover:from-electric-violet-700 hover:to-electric-violet-800 font-medium text-sm flex items-center"
                       >
                         Read More
                         <ArrowRight size={16} className="ml-1" />
-                      </Link>
+                      </a>
                     </div>
                   </div>
                 </article>
@@ -138,42 +237,50 @@ const Blog = () => {
                 >
                   <div className="relative overflow-hidden">
                     <img
-                      src={post.image}
-                      alt={post.title}
+                      src={post._embedded['wp:featuredmedia']?.[0]?.source_url || 'https://images.pexels.com/photos/267350/pexels-photo-267350.jpeg?auto=compress&cs=tinysrgb&w=800'}
+                      alt={post.title.rendered}
                       className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = 'https://images.pexels.com/photos/267350/pexels-photo-267350.jpeg?auto=compress&cs=tinysrgb&w=800';
+                      }}
                     />
                     <div className="absolute top-4 left-4">
-                      <span className="bg-white bg-opacity-90 text-black-800 px-3 py-1 rounded-full text-sm font-medium capitalize">
-                        {post.category.replace('-', ' ')}
+                      <span className="bg-white bg-opacity-90 text-black-800 px-3 py-1 rounded-full text-sm font-medium">
+                        Article
                       </span>
                     </div>
                   </div>
                   <div className="p-6">
                     <div className="flex items-center text-sm text-black-500 mb-3">
                       <Calendar size={16} className="mr-2" />
-                      <span>{new Date(post.date).toLocaleDateString()}</span>
+                      <span>{formatDate(post.date)}</span>
                       <span className="mx-2">•</span>
                       <Clock size={16} className="mr-2" />
-                      <span>{post.readTime}</span>
+                      <span>5 min read</span>
                     </div>
                     <h3 className="text-xl font-semibold text-black-900 mb-3 line-clamp-2">
-                      {post.title}
+                      {post.title.rendered}
                     </h3>
                     <p className="text-black-600 mb-4 line-clamp-3">
-                      {post.excerpt}
+                      {stripHtml(post.excerpt.rendered)}
                     </p>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
                         <User size={16} className="mr-2 text-black-400" />
-                        <span className="text-sm text-black-600">{post.author}</span>
+                        <span className="text-sm text-black-600">
+                          {post._embedded.author[0]?.name || 'Admin'}
+                        </span>
                       </div>
-                      <Link
-                        to={`/blog/${post.id}`}
+                      <a
+                        href={post.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="bg-gradient-to-r from-electric-violet-600 to-electric-violet-700 bg-clip-text text-transparent hover:from-electric-violet-700 hover:to-electric-violet-800 font-medium text-sm flex items-center"
                       >
                         Read More
                         <ArrowRight size={16} className="ml-1" />
-                      </Link>
+                      </a>
                     </div>
                   </div>
                 </article>
@@ -184,23 +291,20 @@ const Blog = () => {
       )}
 
       {/* No Results */}
-      {filteredPosts.length === 0 && (
+      {filteredPosts.length === 0 && !loading && (
         <section className="py-16 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h3 className="text-2xl font-semibold text-black-900 mb-4">
               No articles found
             </h3>
             <p className="text-black-600 mb-8">
-              Try adjusting your search terms or category filter.
+              Try adjusting your search terms.
             </p>
             <button
-              onClick={() => {
-                setSearchTerm('');
-                setSelectedCategory('all');
-              }}
+              onClick={() => setSearchTerm('')}
               className="relative overflow-hidden bg-gradient-to-r from-electric-violet-600 to-electric-violet-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 hover:shadow-lg hover:scale-105 group"
             >
-              <span className="relative z-10">Clear Filters</span>
+              <span className="relative z-10">Clear Search</span>
               <div className="absolute inset-0 bg-gradient-to-r from-electric-violet-700 to-electric-violet-800 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
             </button>
