@@ -1,3 +1,63 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* WordPress content styling */
+.wordpress-content h1,
+.wordpress-content h2,
+.wordpress-content h3,
+.wordpress-content h4,
+.wordpress-content h5,
+.wordpress-content h6 {
+  @apply font-bold text-black-900 mt-8 mb-4;
+}
+
+.wordpress-content h1 { @apply text-3xl; }
+.wordpress-content h2 { @apply text-2xl; }
+.wordpress-content h3 { @apply text-xl; }
+.wordpress-content h4 { @apply text-lg; }
+
+.wordpress-content p {
+  @apply mb-4 leading-relaxed;
+}
+
+.wordpress-content ul,
+.wordpress-content ol {
+  @apply mb-4 pl-6;
+}
+
+.wordpress-content li {
+  @apply mb-2;
+}
+
+.wordpress-content ul li {
+  @apply list-disc;
+}
+
+.wordpress-content ol li {
+  @apply list-decimal;
+}
+
+.wordpress-content a {
+  @apply text-electric-violet-600 hover:text-electric-violet-700 underline;
+}
+
+.wordpress-content blockquote {
+  @apply border-l-4 border-electric-violet-600 pl-4 italic my-6 text-black-600;
+}
+
+.wordpress-content img {
+  @apply rounded-lg shadow-md my-6 max-w-full h-auto;
+}
+
+.wordpress-content code {
+  @apply bg-black-100 px-2 py-1 rounded text-sm font-mono;
+}
+
+.wordpress-content pre {
+  @apply bg-black-100 p-4 rounded-lg overflow-x-auto my-6;
+}
+
+.wordpress-content pre code {
+  @apply bg-transparent p-0;
+}

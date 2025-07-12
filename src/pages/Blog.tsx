@@ -204,15 +204,13 @@ const Blog = () => {
                           {post._embedded.author[0]?.name || 'Admin'}
                         </span>
                       </div>
-                      <a
-                        href={post.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <Link
+                        to={`/blog/${post.id}`}
                         className="bg-gradient-to-r from-electric-violet-600 to-electric-violet-700 bg-clip-text text-transparent hover:from-electric-violet-700 hover:to-electric-violet-800 font-medium text-sm flex items-center"
                       >
                         Read More
                         <ArrowRight size={16} className="ml-1" />
-                      </a>
+                      </Link>
                     </div>
                   </div>
                 </article>
@@ -272,15 +270,13 @@ const Blog = () => {
                           {post._embedded.author[0]?.name || 'Admin'}
                         </span>
                       </div>
-                      <a
-                        href={post.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <Link
+                        to={`/blog/${post.id}`}
                         className="bg-gradient-to-r from-electric-violet-600 to-electric-violet-700 bg-clip-text text-transparent hover:from-electric-violet-700 hover:to-electric-violet-800 font-medium text-sm flex items-center"
                       >
                         Read More
                         <ArrowRight size={16} className="ml-1" />
-                      </a>
+                      </Link>
                     </div>
                   </div>
                 </article>
